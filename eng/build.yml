@@ -88,7 +88,7 @@ phases:
     - task: PublishTestResults@2
       inputs:
         testResultsFormat: 'xUnit'
-        testResultsFiles: '*.*' 
+        testResultsFiles: '*.xml' 
         searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)'
       continueOnError: true
       condition: always()
