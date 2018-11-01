@@ -11,19 +11,18 @@ resources:
   - container: LinuxContainer
     image: microsoft/dotnet-buildtools-prereqs:ubuntu-14.04-cross-0cd4667-20170319080304
 
-jobs:
+phases:
   - template: /eng/build.yml
     parameters:
       name: Windows_NT
-      pool:
+      queue:
         # For public or PR jobs, use the hosted pool.  For internal jobs use the internal pool.
         # Will eventually change this to two BYOC pools.
         ${{ if or(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.Repository.Provider'], 'GitHub')) }}:
           name: dotnet-external-temp
         ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'), ne(variables['Build.Repository.Provider'], 'GitHub')) }}:
           name: dotnet-internal-temp
-      strategy:
-        maxParallel: 2
+        parallel: 2
         matrix:
           Build_Debug:
             _BuildConfig: Debug
@@ -45,14 +44,13 @@ jobs:
   - template: /eng/build.yml
     parameters:
       name: Linux
-      pool:
+      queue:
         container: LinuxContainer
         ${{ if or(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.Repository.Provider'], 'GitHub')) }}:
           name: dnceng-linux-external-temp
         ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest'), ne(variables['Build.Repository.Provider'], 'GitHub')) }}:
           name: dnceng-linux-internal-temp
-      strategy:
-        maxParallel: 2
+        parallel: 2
         matrix:
           Build_Debug:
             _BuildConfig: Debug
