@@ -4,10 +4,12 @@ parameters:
   enableTelemetry: true
   # install Microbuild plugin if not a public build
   enableMicrobuild: true
-  # queue YAML object - https://github.com/Microsoft/vsts-agent/blob/master/docs/preview/yamlgettingstarted-schema.md#queue
+  # pool YAML object - https://docs.microsoft.com/en-us/azure/devops/pipelines/yaml-schema?view=vsts&tabs=schema#pool
   queue: {}
-  # variables YAML object - https://github.com/Microsoft/vsts-agent/blob/master/docs/preview/yamlgettingstarted-schema.md#phase
+  # variables YAML object - https://docs.microsoft.com/en-us/azure/devops/pipelines/yaml-schema?view=vsts&tabs=schema#job
   variables: {}
+
+  strategy: {}
 
 # Common conditionals:  There are a number of common conditionals that are useful.  Generally these are used to decide what resources can be accessed,
 #                       or what logic should be applied based on the context the build is being run in.
@@ -27,6 +29,8 @@ phases:
     name: ${{ parameters.name }}
 
     queue: ${{ parameters.queue }}
+
+    strategy: ${{ parameters.strategy }}
 
     variables: 
       ${{ insert }}: ${{ parameters.variables }}
