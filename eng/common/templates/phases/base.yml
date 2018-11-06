@@ -11,6 +11,8 @@ parameters:
   # Required: A defined YAML queue
   queue: {}
 
+  pool: {}
+
   # Required: build steps
   steps: []
 
@@ -40,6 +42,81 @@ parameters:
 # and some (Microbuild) should only be applied to non-PR cases for internal builds.
 
 phases:
+- ${{ if ne(parameters.queue, '') }}
+ phase: ${{ parameters.name }}
+
+  queue: ${{ parameters.queue }}
+
+  ${{ if ne(parameters.variables, '') }}:
+    variables: 
+      ${{ insert }}: ${{ parameters.variables }}
+
+  steps:
+  - checkout: self
+    clean: ${{ parameters.clean }}
+    ${{ if ne(parameters.fetchDepth, '') }}:
+      fetchDepth: ${{ parameters.fetchDepth }}
+
+  - ${{ if eq(parameters.enableTelemetry, 'true') }}:
+    - template: /eng/common/templates/steps/telemetry-start.yml
+      parameters:
+        buildConfig: $(_HelixBuildConfig)
+        helixSource: $(_HelixSource)
+        helixType: $(_HelixType)
+        runAsPublic: ${{ parameters.runAsPublic }}
+
+  - ${{ if eq(parameters.enableMicrobuild, 'true') }}:
+    # Internal only resource, and Microbuild signing shouldn't be applied to PRs.
+    - ${{ if and(eq(parameters.runAsPublic, 'false'), ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+      - task: MicroBuildSigningPlugin@2
+        displayName: Install MicroBuild plugin
+        inputs:
+          signType: $(_SignType)
+          zipSources: false
+          feedSource: https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
+          
+        env:
+          TeamName: $(_TeamName)
+        continueOnError: false
+        condition: and(succeeded(), in(variables['_SignType'], 'real', 'test'), eq(variables['Agent.Os'], 'Windows_NT'))
+
+  # Run provided build steps
+  - ${{ parameters.steps }}
+
+  - ${{ if eq(parameters.enableMicrobuild, 'true') }}:
+    # Internal only resources
+    - ${{ if and(eq(parameters.runAsPublic, 'false'), ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+      - task: MicroBuildCleanup@1
+        displayName: Execute Microbuild cleanup tasks  
+        condition: and(always(), in(variables['_SignType'], 'real', 'test'), eq(variables['Agent.Os'], 'Windows_NT'))
+        env:
+          TeamName: $(_TeamName)
+
+  - ${{ if eq(parameters.enableTelemetry, 'true') }}:
+    - template: /eng/common/templates/steps/telemetry-end.yml
+      parameters:
+        helixSource: $(_HelixSource)
+        helixType: $(_HelixType)
+
+  - ${{ if and(eq(parameters.runAsPublic, 'false'), ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+    - task: CopyFiles@2
+      displayName: Gather Asset Manifests
+      inputs:
+        SourceFolder: '$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/AssetManifest'
+        TargetFolder: '$(Build.StagingDirectory)/AssetManifests'
+      continueOnError: false
+      condition: and(succeeded(), eq(variables['_DotNetPublishToBlobFeed'], 'true'))
+    - task: PublishBuildArtifacts@1
+      displayName: Push Asset Manifests
+      inputs:
+        PathtoPublish: '$(Build.StagingDirectory)/AssetManifests'
+        PublishLocation: Container
+        ArtifactName: AssetManifests
+      continueOnError: false
+      condition: and(succeeded(), eq(variables['_DotNetPublishToBlobFeed'], 'true'))
+
+jobs:
+${{ if ne(parameters.pool, '') }}
 - phase: ${{ parameters.name }}
 
   queue: ${{ parameters.queue }}
