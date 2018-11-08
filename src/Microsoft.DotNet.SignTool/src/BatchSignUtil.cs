@@ -9,6 +9,7 @@ using System.IO;
 using System.IO.Compression;
 using System.IO.Packaging;
 using System.Linq;
+using System.Reflection.PortableExecutable;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
@@ -56,7 +57,7 @@ namespace Microsoft.DotNet.SignTool
             }
 
             // Validate the signing worked and produced actual signed binaries in all locations.
-            VerifyAfterSign(_log);
+            VerifyAuthenticodeSigning();
 
             if (_log.HasLoggedErrors)
             {
@@ -253,7 +254,25 @@ namespace Microsoft.DotNet.SignTool
             }
         }
 
-        private void VerifyAfterSign(TaskLoggingHelper log)
+        private void VerifyStrongNameSigning()
+        {
+            foreach (var file in _batchData.FilesToSign)
+            {
+                if (file.IsPEFile())
+                {
+                    using (var stream = new FileStream(file.FullPath, FileMode.Open, FileAccess.ReadWrite, FileShare.Read))
+                    using (var peReader = new PEReader(stream))
+                    {
+                        if (ContentUtil.IsPublicSigned(peReader))
+                        {
+                            _log.LogError($"Assembly {file} is not strongly-nam signed properly");
+                        }
+                    }
+                }
+            }
+        }
+
+        private void VerifyAuthenticodeSigning()
         {
             foreach (var file in _batchData.FilesToSign)
             {
@@ -263,7 +282,7 @@ namespace Microsoft.DotNet.SignTool
                     {
                         if (!_signTool.VerifySignedPEFile(stream))
                         {
-                            log.LogError($"Assembly {file} is not signed properly");
+                            _log.LogError($"Assembly {file} is not signed properly");
                         }
                     }
                 }
@@ -292,7 +311,7 @@ namespace Microsoft.DotNet.SignTool
 
                             if (!_signTool.VerifySignedPEFile(peStream))
                             {
-                                log.LogError($"Zip container {file} has part {relativeName} which is not signed.");
+                                _log.LogError($"Zip container {file} has part {relativeName} which is not signed.");
                             }
                         }
                     }
