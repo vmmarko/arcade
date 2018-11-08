@@ -56,6 +56,9 @@ namespace Microsoft.DotNet.SignTool
                 return;
             }
 
+            // Check that all files have a strong name signature
+            VerifyStrongNameSigning();
+
             // Validate the signing worked and produced actual signed binaries in all locations.
             VerifyAuthenticodeSigning();
 
