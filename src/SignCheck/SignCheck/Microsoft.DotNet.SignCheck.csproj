@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.2.0" PrivateAssets="All" Publish="true" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.0.0" />
   </ItemGroup>
 
   <ItemGroup>
