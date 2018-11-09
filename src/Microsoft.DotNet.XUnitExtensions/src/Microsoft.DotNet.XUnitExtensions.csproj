@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <PackageReference Include="xunit" Version="$(XUnitVersion)" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.0.0" />
   </ItemGroup>
 
 </Project>
