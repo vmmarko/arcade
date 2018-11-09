@@ -10,7 +10,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Rest.ClientRuntime" Version="$(MicrosoftRestClientRuntimeVersion)" />
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.0.0" />
   </ItemGroup>
 
   <ItemGroup>
